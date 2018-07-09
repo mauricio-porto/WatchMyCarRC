@@ -52,11 +52,11 @@ public class BluetoothChatService {
     // However if you are connecting to an Android peer then please generate your own unique UUID.
     // Ref: https://developer.android.com/reference/android/bluetooth/BluetoothDevice.html
     
-    //private static final UUID MY_UUID_SECURE = UUID.fromString("fa87c0d0-afac-11de-8a39-0800200c9a66");
+    private static final UUID MY_UUID_SECURE = UUID.fromString("fa87c0d0-afac-11de-8a39-0800200c9a66");
     //private static final UUID MY_UUID_SECURE = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
-    private static final UUID MY_UUID_SECURE = UUID.fromString("b54846d5-6848-46fd-9bae-9f2c89adc4f4");
-    //private static final UUID MY_UUID_INSECURE = UUID.fromString("8ce255c0-200a-11e0-ac64-0800200c9a66");
-    private static final UUID MY_UUID_INSECURE = MY_UUID_SECURE;
+    //private static final UUID MY_UUID_SECURE = UUID.fromString("b54846d5-6848-46fd-9bae-9f2c89adc4f4");
+    private static final UUID MY_UUID_INSECURE = UUID.fromString("8ce255c0-200a-11e0-ac64-0800200c9a66");
+    //private static final UUID MY_UUID_INSECURE = MY_UUID_SECURE;
 
     // Member fields
     private final BluetoothAdapter mAdapter;

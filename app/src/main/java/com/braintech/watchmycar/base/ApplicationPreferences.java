@@ -49,4 +49,11 @@ public class ApplicationPreferences {
         return appSharedPrefs.getString(BT_DEVICE_ADDRESS, null);
     }
 
+    public void setBTDeviceName(String btDeviceName) {
+        appSharedPrefs.edit().putString(BT_DEVICE_NAME, btDeviceName).commit();
+    }
+
+    public void setBTDeviceAddress(String btDeviceAddress) {
+        appSharedPrefs.edit().putString(BT_DEVICE_ADDRESS, btDeviceAddress).commit();
+    }
 }

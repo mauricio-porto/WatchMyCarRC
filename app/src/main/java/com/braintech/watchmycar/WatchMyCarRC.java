@@ -59,6 +59,7 @@ public class WatchMyCarRC extends AppCompatActivity {
 	 * Name of the connected device
 	 */
 	private String mConnectedDeviceName = null;
+    private String mConnectedDeviceAddress = null;
 
 	/**
 	 * Member object for the chat services
@@ -117,6 +118,12 @@ public class WatchMyCarRC extends AppCompatActivity {
 		} else if (mChatService == null) {
             // Initialize the BluetoothChatService to perform bluetooth connections
             mChatService = new BluetoothChatService(this, mHandler);
+
+            if (!connectKnownDevice()) {
+                // Launch the DeviceListActivity to see devices and do scan
+                Intent serverIntent = new Intent(this, DeviceListActivity.class);
+                startActivityForResult(serverIntent, REQUEST_CONNECT_DEVICE_SECURE);
+            }
 		}
 	}
 
@@ -169,22 +176,6 @@ public class WatchMyCarRC extends AppCompatActivity {
 		}
     }
 
-    private void setStatus(int resId) {
-        final ActionBar actionBar = this.getActionBar();
-        if (null == actionBar) {
-            return;
-        }
-        actionBar.setSubtitle(resId);
-    }
-
-    private void setStatus(CharSequence subTitle) {
-        final ActionBar actionBar = this.getActionBar();
-        if (null == actionBar) {
-            return;
-        }
-        actionBar.setSubtitle(subTitle);
-    }
-
     private void initTimer() {
         //cTimer = new CountDownTimer((preferences.getTimerDelay()) * 1000, 1000) {
         cTimer = new CountDownTimer(30000, 1000) {
@@ -234,14 +225,16 @@ public class WatchMyCarRC extends AppCompatActivity {
 			case Constants.MESSAGE_STATE_CHANGE:
 				switch (msg.arg1) {
 				case BluetoothChatService.STATE_CONNECTED:
-					setStatus(getString(R.string.title_connected_to, mConnectedDeviceName));
+				    mTextMessage.setText(getString(R.string.title_connected_to, mConnectedDeviceName));
+					preferences.setBTDeviceAddress(mConnectedDeviceName);
+					preferences.setBTDeviceAddress(mConnectedDeviceAddress);
 					break;
 				case BluetoothChatService.STATE_CONNECTING:
-					setStatus(R.string.title_connecting);
+					mTextMessage.setText(R.string.title_connecting);
 					break;
 				case BluetoothChatService.STATE_LISTEN:
 				case BluetoothChatService.STATE_NONE:
-					setStatus(R.string.title_not_connected);
+					mTextMessage.setText(R.string.title_not_connected);
 					break;
 				}
 				break;
@@ -310,9 +303,9 @@ public class WatchMyCarRC extends AppCompatActivity {
 	 */
 	private void connectDevice(Intent data, boolean secure) {
 		// Get the device MAC address
-		String address = data.getExtras().getString(DeviceListActivity.EXTRA_DEVICE_ADDRESS);
+		mConnectedDeviceAddress = data.getExtras().getString(DeviceListActivity.EXTRA_DEVICE_ADDRESS);
 		// Get the BluetoothDevice object
-		BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(address);
+		BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(mConnectedDeviceAddress);
 		// Attempt to connect to the device
 		mChatService.connect(device, secure);
 	}
@@ -327,5 +320,25 @@ public class WatchMyCarRC extends AppCompatActivity {
 		    result = true;
         }
 	    return result;
+    }
+
+    /**
+     * Sends a message.
+     *
+     * @param message A string of text to send.
+     */
+    private void sendMessage(String message) {
+        // Check that we're actually connected before trying anything
+        if (mChatService.getState() != BluetoothChatService.STATE_CONNECTED) {
+            Toast.makeText(this, R.string.not_connected, Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Check that there's actually something to send
+        if (message.length() > 0) {
+            // Get the message bytes and tell the BluetoothChatService to write
+            byte[] send = message.getBytes();
+            mChatService.write(send);
+        }
     }
 }
