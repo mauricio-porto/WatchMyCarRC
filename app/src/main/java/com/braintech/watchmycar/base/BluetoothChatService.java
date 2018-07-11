@@ -209,6 +209,12 @@ public class BluetoothChatService {
         msg.setData(bundle);
         mHandler.sendMessage(msg);
 
+        msg = mHandler.obtainMessage(Constants.MESSAGE_DEVICE_ADDRESS);
+        bundle = new Bundle();
+        bundle.putString(Constants.DEVICE_ADDRESS, device.getAddress());
+        msg.setData(bundle);
+        mHandler.sendMessage(msg);
+
         setState(STATE_CONNECTED);
     }
 

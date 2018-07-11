@@ -1,6 +1,5 @@
 package com.braintech.watchmycar;
 
-import android.app.ActionBar;
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -10,6 +9,7 @@ import android.os.CountDownTimer;
 import android.os.Handler;
 import android.os.Message;
 import android.os.Messenger;
+import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
@@ -19,8 +19,6 @@ import android.widget.Toast;
 
 import com.braintech.watchmycar.base.ApplicationPreferences;
 import com.braintech.watchmycar.base.BluetoothChatService;
-
-import static com.braintech.watchmycar.Utils.getTimerText;
 
 public class WatchMyCarRC extends AppCompatActivity {
 
@@ -54,6 +52,7 @@ public class WatchMyCarRC extends AppCompatActivity {
 
 
     private TextView mTextMessage;
+    private FloatingActionButton btButton;
 
 	/**
 	 * Name of the connected device
@@ -68,6 +67,7 @@ public class WatchMyCarRC extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        Log.d(TAG, "onCreate");
         super.onCreate(savedInstanceState);
         preferences = new ApplicationPreferences(getApplicationContext());
 
@@ -104,10 +104,21 @@ public class WatchMyCarRC extends AppCompatActivity {
             }
         });
 
+        btButton  = (FloatingActionButton) findViewById(R.id.fab);
+        btButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent serverIntent = new Intent(WatchMyCarRC.this, DeviceListActivity.class);
+                startActivityForResult(serverIntent, REQUEST_CONNECT_DEVICE_SECURE);
+                btButton.setEnabled(false);
+            }
+        });
+        btButton.setEnabled(false);
     }
 
 	@Override
 	public void onStart() {
+        Log.d(TAG, "onStart");
 		super.onStart();
 		// If BT is not on, request that it be enabled.
 		// setupChat() will then be called during onActivityResult
@@ -131,6 +142,7 @@ public class WatchMyCarRC extends AppCompatActivity {
     protected void onSaveInstanceState(Bundle outState) {
         Log.d(TAG, "onSaveInstanceState");
         outState.putBoolean("armed", armed);
+        outState.putString("btDeviceAddress", mConnectedDeviceAddress);
         super.onSaveInstanceState(outState);
     }
 
@@ -139,21 +151,34 @@ public class WatchMyCarRC extends AppCompatActivity {
         Log.d(TAG, "onRestoreInstanceState");
         super.onRestoreInstanceState(savedInstanceState);
         armed = savedInstanceState.getBoolean("armed");
+        mConnectedDeviceAddress = savedInstanceState.getString("btDeviceAddress");
     }
 
     @Override
     protected void onDestroy() {
         Log.d(TAG, "onDestroy");
         super.onDestroy();
-		if (mChatService != null) {
-			mChatService.stop();
-		}
+        if (mChatService != null) {
+            mChatService.stop();
+        }
+    }
+
+    @Override
+    protected void onStop() {
+        Log.d(TAG, "onStop");
+        super.onStop();
+    }
+
+    @Override
+    protected void onRestart() {
+        Log.d(TAG, "onRestart");
+        super.onRestart();
     }
 
     private void setDelayTimer() {
         //int timeM = preferences.getTimerDelay() * 1000;
         int timeM = 30000;
-        txtTimer.setText(getTimerText(timeM));
+        txtTimer.setText(Utils.getTimerText(timeM));
     }
 
     @Override
@@ -182,7 +207,7 @@ public class WatchMyCarRC extends AppCompatActivity {
 
             public void onTick(long millisUntilFinished) {
                 mOnTimerTicking = true;
-                txtTimer.setText(getTimerText(millisUntilFinished));
+                txtTimer.setText(Utils.getTimerText(millisUntilFinished));
             }
 
             public void onFinish() {
@@ -208,7 +233,7 @@ public class WatchMyCarRC extends AppCompatActivity {
 
         txtAlarmStatus.setText(R.string.alarm_status_off);
         int timeM = 30000;  //preferences.getTimerDelay() * 1000;
-        txtTimer.setText(getTimerText(timeM));
+        txtTimer.setText(Utils.getTimerText(timeM));
         txtTimer.setVisibility(View.VISIBLE);
         txtTimerTitle.setVisibility(View.VISIBLE);
         armed = false;
@@ -226,8 +251,7 @@ public class WatchMyCarRC extends AppCompatActivity {
 				switch (msg.arg1) {
 				case BluetoothChatService.STATE_CONNECTED:
 				    mTextMessage.setText(getString(R.string.title_connected_to, mConnectedDeviceName));
-					preferences.setBTDeviceAddress(mConnectedDeviceName);
-					preferences.setBTDeviceAddress(mConnectedDeviceAddress);
+					btButton.setEnabled(false);
 					break;
 				case BluetoothChatService.STATE_CONNECTING:
 					mTextMessage.setText(R.string.title_connecting);
@@ -235,6 +259,7 @@ public class WatchMyCarRC extends AppCompatActivity {
 				case BluetoothChatService.STATE_LISTEN:
 				case BluetoothChatService.STATE_NONE:
 					mTextMessage.setText(R.string.title_not_connected);
+					btButton.setEnabled(true);
 					break;
 				}
 				break;
@@ -254,7 +279,13 @@ public class WatchMyCarRC extends AppCompatActivity {
 				// save the connected device's name
 				mConnectedDeviceName = msg.getData().getString(Constants.DEVICE_NAME);
                 Toast.makeText(WatchMyCarRC.this, "Connected to " + mConnectedDeviceName, Toast.LENGTH_SHORT).show();
-				break;
+                preferences.setBTDeviceName(mConnectedDeviceName);
+                break;
+            case Constants.MESSAGE_DEVICE_ADDRESS:
+                // save the connected device address
+                mConnectedDeviceAddress = msg.getData().getString(Constants.DEVICE_ADDRESS);
+                preferences.setBTDeviceAddress(mConnectedDeviceAddress);
+                break;
 			case Constants.MESSAGE_TOAST:
                 Toast.makeText(WatchMyCarRC.this, msg.getData().getString(Constants.TOAST), Toast.LENGTH_SHORT).show();
 				break;
